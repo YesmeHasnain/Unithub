@@ -2,31 +2,38 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
+// Agar email verification chahiye to upar wali line ko aise kar do:
+// class User extends Authenticatable implements MustVerifyEmail
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
     /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
+     * Mass assignable attributes.
      */
     protected $fillable = [
         'name',
         'email',
         'password',
+
+        // Extra profile fields
+        'first_name',
+        'last_name',
+        'location',
+        'bio',
+        'website',
+        'phone',
+        'phone_private',
+        'profile_photo_path',
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
+     * Hidden attributes (JSON waghera me nahi jayenge).
      */
     protected $hidden = [
         'password',
@@ -34,15 +41,37 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
+     * Attribute casts.
      */
-    protected function casts(): array
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'phone_private'     => 'boolean',
+        'password'          => 'hashed',
+    ];
+
+    /**
+     * Full name accessor: $user->full_name
+     */
+    public function getFullNameAttribute(): string
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        if ($this->first_name || $this->last_name) {
+            return trim(($this->first_name ?? '') . ' ' . ($this->last_name ?? ''));
+        }
+
+        return $this->name ?? $this->email;
+    }
+
+    /**
+     * Profile photo URL accessor: $user->profile_photo_url
+     */
+    public function getProfilePhotoUrlAttribute(): string
+    {
+        if ($this->profile_photo_path) {
+            // /storage/profile-photos/xyz.jpg
+            return asset('storage/' . $this->profile_photo_path);
+        }
+
+        // Default avatar
+        return asset('dist/img/avatar12.jpg');
     }
 }
